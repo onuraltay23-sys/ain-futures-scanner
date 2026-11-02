@@ -20,3 +20,6 @@ Tarayıcıda Streamlit'in gösterdiği yerel URL açılır.
 
 ## Uyarı
 Sinyaller yalnızca gözlem amaçlıdır; finansal tavsiye değildir. L/S ratio, OI ve fiyat değişimi tek başına pozisyon açma gerekçesi değildir. Binance API uç noktalarının kullanılabilirliği, oran limitleri ve ürün kapsamı değişebilir.
+
+
+Otomatik tarama varsayılan olarak açıktır ve 60 saniyede bir yenilenir. Streamlit sayfası açık ve çalışır durumda tutulmalıdır. Yenileme aralığını uygulamanın sol panelinden değiştirebilirsiniz.

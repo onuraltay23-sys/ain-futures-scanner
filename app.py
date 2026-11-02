@@ -3,6 +3,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 import requests
 import pandas as pd
 import streamlit as st
+from streamlit_autorefresh import st_autorefresh
 
 BASE = "https://fapi.binance.com"
 st.set_page_config(page_title="Futures Crowd Scanner", page_icon="🐋", layout="wide")
@@ -14,7 +15,12 @@ scan_all = st.sidebar.checkbox("Hacim filtresini geçen tüm USDT perpetual coin
 min_volume = st.sidebar.number_input("Minimum 24s hacim (USDT)", min_value=0, value=2_000_000, step=500_000)
 symbols_raw = st.sidebar.text_input("Özel semboller (virgülle)", "AINUSDT,BTCUSDT,ETHUSDT", disabled=scan_all)
 period = st.sidebar.selectbox("Long/Short ve OI periyodu", ["5m", "15m", "1h"], index=1)
-run = st.sidebar.button("Verileri tara", type="primary")
+auto_scan = st.sidebar.checkbox("Otomatik sürekli tarama", value=True)
+refresh_seconds = st.sidebar.selectbox("Yenileme aralığı (saniye)", [30, 60, 90, 120], index=1, disabled=not auto_scan)
+run = st.sidebar.button("Şimdi tara", type="primary")
+
+if auto_scan:
+    st_autorefresh(interval=int(refresh_seconds) * 1000, key="futures_scanner_refresh")
 
 st.info("Yüksek Long/Short oranı tek başına ters işlem sinyali değildir. Funding, OI ve fiyat hareketini birlikte değerlendir.")
 
@@ -71,7 +77,7 @@ def fetch_symbol(symbol, period):
             f"Fiyat değişim ({period}) %": price_change, "Funding %": funding_rate,
             "İzleme": signal, "Not": reason}
 
-if run:
+if run or auto_scan:
     try:
         if scan_all:
             with st.spinner("Binance'tan hacim filtresini geçen coinler bulunuyor..."):
@@ -82,6 +88,8 @@ if run:
             st.warning("Bu hacim eşiğini geçen sembol bulunamadı.")
         else:
             st.write(f"**{len(symbols)} coin** taranacak (minimum 24s hacim: **{min_volume:,.0f} USDT**).")
+            if auto_scan:
+                st.caption(f"⟳ Otomatik tarama açık — her {refresh_seconds} saniyede yenilenir. Bu sayfa açık kalmalı.")
             rows, errors = [], []
             progress = st.progress(0)
             status = st.empty()
@@ -107,7 +115,7 @@ if run:
 else:
     st.markdown("""
 ### Başlamak için
-Sol tarafta **minimum 24s hacmi 2.000.000 USDT** olarak bırak ve **Verileri tara** düğmesine bas. Varsayılan ayar, hacim filtresini geçen tüm USDT perpetual coinleri tarar.
+Sol tarafta **minimum 24s hacmi 2.000.000 USDT** olarak bırak. Varsayılan ayar, otomatik taramayı her 60 saniyede yeniler; istersen otomatik taramayı kapatıp **Şimdi tara** ile tek seferlik tarayabilirsin. Varsayılan ayar hacim filtresini geçen tüm USDT perpetual coinleri tarar.
 
 **Okuma notu:** L/S oranı Binance'ın global hesap oranıdır; bütün piyasanın eksiksiz pozisyon verisi değildir. OI ve fiyat değişimi bağlam sağlar. Demo/araştırma amaçlı kullan; kaldıraçlı işlemlerde likidasyon riski yüksektir.
 """)
